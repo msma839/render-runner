@@ -16,7 +16,7 @@ permissions:
 
 jobs:
   render:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 120
     steps:
       - uses: actions/checkout@v4
@@ -25,10 +25,16 @@ jobs:
           node-version: '22'
       - name: Install system dependencies
         run: |
-          sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg unzip \
-            libnss3 libatk-bridge2.0-0 libatk1.0-0 libcups2 libdrm2 libxkbcommon0 \
-            libxcomposite1 libxdamage1 libxfixes3 libxrandr2 libgbm1 libasound2 \
-            libpango-1.0-0 libgtk-3-0
+          # Ubuntu 24.04 renamed several libs with the t64 suffix
+          # (libasound2 -> libasound2t64 etc.); install each package
+          # individually so one renamed/missing package cannot fail the step.
+          sudo apt-get update -qq
+          for pkg in ffmpeg unzip libnss3 libatk-bridge2.0-0t64 libatk1.0-0t64 \
+            libcups2t64 libdrm2t64 libxkbcommon0 libxcomposite1 libxdamage1 \
+            libxfixes3 libxrandr2 libgbm1 libasound2t64 libpango-1.0-0 \
+            libgtk-3-0t64 libatspi2.0-0 libcairo2; do
+            sudo apt-get install -y -qq "$pkg" || echo "WARNING: could not install $pkg"
+          done
       - name: Download project
         run: |
           curl -L -o project.zip "${{ inputs.project_url }}"
