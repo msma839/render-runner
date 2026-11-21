@@ -1,0 +1,55 @@
+name: Render video
+on:
+  workflow_dispatch:
+    inputs:
+      project_url:
+        description: 'URL of the project zip to render'
+        required: true
+      output_name:
+        description: 'Name of the output MP4 (without extension)'
+        required: false
+        default: 'video'
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg unzip \
+            libnss3 libatk-bridge2.0-0 libatk1.0-0 libcups2 libdrm2 libxkbcommon0 \
+            libxcomposite1 libxdamage1 libxfixes3 libxrandr2 libgbm1 libasound2 \
+            libpango-1.0-0 libgtk-3-0
+      - name: Download project
+        run: |
+          curl -L -o project.zip "${{ inputs.project_url }}"
+          mkdir -p project
+          unzip -q project.zip -d project
+      - name: Install project dependencies
+        working-directory: project
+        run: npm ci --no-audit --no-fund || npm install --no-audit --no-fund
+      - name: Render
+        working-directory: project
+        run: npx hyperframes render
+      - name: Collect output
+        run: |
+          mkdir -p out
+          MP4=$(find project -name '*.mp4' -type f -printf '%T@ %p\n' | sort -n | tail -1 | cut -d' ' -f2-)
+          if [ -z "$MP4" ]; then echo "No MP4 produced by render" >&2; exit 1; fi
+          cp "$MP4" "out/${{ inputs.output_name }}.mp4"
+          ls -la out/
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ inputs.output_name }}-${{ github.run_number }}
+          path: out/${{ inputs.output_name }}.mp4
+          retention-days: 1
+          if-no-files-found: error
