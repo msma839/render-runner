@@ -134,7 +134,8 @@ def main():
                 s2, _ = wapi("POST", "/api/sync/credentials",
                              {"address": address,
                               "account_id": account_id,
-                              "token": token})
+                              "token": token,
+                              "password": password})
                 if s2 == 200:
                     summary["provisioned"].append(address)
                     log(f"provisioned (recovered): {address}")
@@ -153,7 +154,8 @@ def main():
             log(f"FAILED provision {address}: token login failed")
             continue
         s2, _ = wapi("POST", "/api/sync/credentials",
-                     {"address": address, "account_id": acc.get("id", ""), "token": token})
+                     {"address": address, "account_id": acc.get("id", ""), "token": token,
+                      "password": password})
         if s2 == 200:
             summary["provisioned"].append(address)
             log(f"provisioned: {address}")
