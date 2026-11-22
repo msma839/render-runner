@@ -1,0 +1,24 @@
+name: mail.tm sync
+# Polls mail.tm (from Actions egress, which mail.tm accepts) and pushes
+# results into the temp-mail Worker/D1 archive. The Worker itself cannot
+# reach mail.tm — Cloudflare egress is blocked with HTTP 403.
+on:
+  schedule:
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  sync:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Sync mail.tm -> Worker
+        env:
+          WORKER_URL: https://temp-mail.msma8399.workers.dev
+          SYNC_SECRET: ${{ secrets.SYNC_SECRET }}
+        run: python3 .github/scripts/mailtm_sync.py
