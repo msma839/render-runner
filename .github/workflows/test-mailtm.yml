@@ -1,0 +1,15 @@
+name: Test mail.tm reachability
+on:
+  workflow_dispatch:
+jobs:
+  probe:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Probe mail.tm from Actions egress
+        run: |
+          echo "=== GET https://api.mail.tm/ ==="
+          curl -s -m 30 -o /tmp/root.json -w "HTTP %{http_code} size %{size_download}\n" https://api.mail.tm/ || echo "curl exit $?"
+          head -c 300 /tmp/root.json; echo
+          echo "=== GET https://api.mail.tm/domains ==="
+          curl -s -m 30 -o /tmp/domains.json -w "HTTP %{http_code} size %{size_download}\n" https://api.mail.tm/domains || echo "curl exit $?"
+          head -c 500 /tmp/domains.json; echo
