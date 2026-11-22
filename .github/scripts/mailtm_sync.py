@@ -95,7 +95,8 @@ def main():
     status, domains_raw = http_retry("GET", MAILTM + "/domains?page=1", attempts=3)
     domains = []
     if status == 200:
-        members = domains_raw.get("hydra:member") or []
+        # /domains returns a plain JSON array (not a Hydra collection).
+        members = domains_raw if isinstance(domains_raw, list) else (domains_raw.get("hydra:member") or [])
         domains = [d["domain"] for d in members
                    if d.get("domain") and d.get("isActive", True)]
     if domains:
@@ -180,7 +181,7 @@ def main():
             status, data = http_retry("GET", f"{MAILTM}/messages?page={page}", headers=headers, attempts=2)
             if status != 200:
                 break
-            members = data.get("hydra:member") or []
+            members = data if isinstance(data, list) else (data.get("hydra:member") or [])
             if not members:
                 break
             new_ids.extend(m["id"] for m in members if m.get("id"))
